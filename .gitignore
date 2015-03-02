@@ -1,3 +1,10 @@
 ceph-disk-*
 .vagrant
+/workspace/bin
+/workspace/pkg
+
+/workspace/src/*
+/workspace/src/ceph-metrics/build
+
+!/workspace/src/ceph-metrics
 
