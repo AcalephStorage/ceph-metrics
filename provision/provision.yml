@@ -1,0 +1,8 @@
+---
+- include: ceph-ansible/site.yml
+
+- hosts: all
+  sudo: yes
+  roles:
+    - git
+    - go

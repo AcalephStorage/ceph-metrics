@@ -1,0 +1,4 @@
+---
+go_version: 1.4.2
+go_os: linux
+go_arch: amd64
