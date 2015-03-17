@@ -1,8 +1,13 @@
 ---
-- include: ceph-ansible/site.yml
+# - include: ceph-ansible/site.yml
 
 - hosts: all
   sudo: yes
   roles:
     - git
     - go
+
+- host: ceph-metric-0
+  sudo: yes
+  roles:
+    - influxdb

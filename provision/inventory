@@ -1,0 +1,27 @@
+ceph-metric-0 ansible_ssh_host=192.168.12.10 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+ceph-metric-1 ansible_ssh_host=192.168.12.11 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+ceph-metric-2 ansible_ssh_host=192.168.12.12 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+ceph-metric-3 ansible_ssh_host=192.168.12.13 ansible_ssh_user=vagrant ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key
+
+[mons]
+ceph-metric-0
+ceph-metric-1
+ceph-metric-2
+
+[osds]
+ceph-metric-0
+ceph-metric-1
+ceph-metric-2
+ceph-metric-3
+
+[mdss]
+
+[rgws]
+
+[all:vars]
+fsid=4a158d27-f750-41d5-9e7f-26ce4c9d2d45
+monitor_secret=AQAFx3RTAAAAABAAruXdSr8PTHAiTRgsyQMgPQ==
+cluster_network=192.168.12.0/24
+public_network=192.168.12.0/24
+monitor_interface=eth1
+devices=['/dev/sdb', '/dev/sdc']

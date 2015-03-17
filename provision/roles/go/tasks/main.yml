@@ -17,3 +17,4 @@
   with_items:
     - export GOPATH=/vagrant/workspace
     - export PATH=$PATH:/usr/local/go/bin
+    - export PATH=$PATH:$GOPATH/bin

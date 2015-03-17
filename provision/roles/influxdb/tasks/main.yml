@@ -1,0 +1,34 @@
+---
+- name: Download Influxdb
+  get_url:
+    url: https://s3.amazonaws.com/influxdb/influxdb_{{ influxdb_version }}_{{ influxdb_arch }}.deb
+    dest: /opt/influxdb_{{ influxdb_version }}_{{ influxdb_arch }}.deb
+
+- name: Install Influxdb
+  apt:
+    deb: /opt/influxdb_{{ influxdb_version }}_{{ influxdb_arch }}.deb
+
+- name: Copy Custom Config
+  copy:
+    src: config.toml
+    dest: /opt/influxdb/shared/config.toml
+  notify: Restart Influxdb
+
+- name: Start Influxdb
+  service:
+    name: influxdb
+    state: started
+
+- name: Wait for Influxdb API
+  wait_for:
+    port: 8086
+
+- name: Create Graphite Database
+  uri:
+    url: http://localhost:8086/db
+    method: POST
+    body: "{\"name\": \"graphite\"}"
+    force_basic_auth: yes
+    user: root
+    password: root
+    status_code: 201,409

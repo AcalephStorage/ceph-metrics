@@ -4,15 +4,48 @@ import (
 	"gopkg.in/alecthomas/kingpin.v1"
 )
 
+type (
+	HealthStatus int
+	HealthUpdate struct {
+		uri     string
+		status  HealthStatus
+		message string
+	}
+)
+
+const (
+	HealthUnknown  HealthStatus = iota
+	HealthOk       HealthStatus = iota
+	HealthWarn     HealthStatus = iota
+	HealthCritical HealthStatus = iota
+
+	CephHealthUri    = "/ceph/health"
+	CephMonQuorumUri = "/ceph/mon/quorum"
+)
+
+var (
+	cluster         = kingpin.Flag("cluster", "ceph cluster to connect to").Default("ceph").String()
+	cephBinary      = kingpin.Flag("ceph-bin", "The ceph binary").Default("/usr/bin/ceph").String()
+	bindAddress     = kingpin.Flag("bind", "address and port to bind the http server").Default(":8080").String()
+	graphiteAddress = kingpin.Flag("graphite-address", "graphite address and port to send metrics to").Default("localhost:2003").String()
+	interval        = kingpin.Flag("interval", "interval when sending metrics").Default("5").Int()
+
+	healthMap           = make(map[string]HealthUpdate)
+	healthUpdateChannel = make(chan HealthUpdate)
+)
+
 func main() {
-	bindAddress := kingpin.Flag("bind", "address and port to bind the http server").Default(":8080").String()
-	sendMetrics := kingpin.Flag("send-metrics", "enable sending of metrics to graphite/influxdb").Default("false").Bool()
-	graphitePort := kingpin.Flag("graphite-port", "graphite port to send metrics to").Default("2003").Int()
-	interval := kingpin.Flag("interval", "interval when sending metrics").Default("5").Int()
 	kingpin.Version("1.0.0")
 	kingpin.Parse()
-	if *sendMetrics {
-		go processMetrics(*interval, *graphitePort)
-	}
+
+	go processMetrics()
+	go updateHealth(healthUpdateChannel)
 	startHttpServer(*bindAddress)
+}
+
+func updateHealth(healthUpdateChannel chan HealthUpdate) {
+	for {
+		update := <-healthUpdateChannel
+		healthMap[update.uri] = update
+	}
 }

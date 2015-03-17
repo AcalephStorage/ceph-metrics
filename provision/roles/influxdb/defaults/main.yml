@@ -1,0 +1,3 @@
+---
+influxdb_version: latest
+influxdb_arch: amd64
