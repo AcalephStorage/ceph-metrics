@@ -19,7 +19,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.provider :virtualbox do |vb|
         2.times.each do |j|
           vb.customize [ "createhd", "--filename", "ceph-disk-#{i}-#{j}", "--size", "10000" ]
-          vb.customize [ "storageattach", :id, "--storagectl", "SATAController", "--port", 3+jx, "--device", 0, "--type", "hdd", "--medium", "ceph-disk-#{i}-#{j}.vdi" ]        
+          vb.customize [ "storageattach", :id, "--storagectl", "SATAController", "--port", 3+j, "--device", 0, "--type", "hdd", "--medium", "ceph-disk-#{i}-#{j}.vdi" ]        
         end    
       end
 
