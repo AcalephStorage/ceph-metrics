@@ -7,7 +7,7 @@
     - git
     - go
 
-- host: ceph-metric-0
+- hosts: ceph-metric-0
   sudo: yes
   roles:
     - influxdb
