@@ -122,13 +122,13 @@ func processMetrics() {
 		time.Sleep(time.Duration(*interval) * time.Second)
 		logrus.Infoln("Sending Metrics...")
 
-		if cephCommand(&monStatus, "mon_status"); err != nil {
+		if err := cephCommand(&monStatus, "mon_status"); err != nil {
 			logrus.Errorln("error: ", err)
 			// error possibly means no mon or not a client?
 			continue
 		}
 
-		isLeader := monStatus.State == leader
+		isLeader := monStatus.State == "leader"
 
 		if isLeader {
 			if err := cephCommand(&cephStatus, "status"); err != nil {
