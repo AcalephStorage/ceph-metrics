@@ -8,6 +8,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   HOSTNAME = 'ceph-metric'
 
   config.vm.box = "ubuntu/trusty64"
+  config.ssh.insert_key = false
+
 
   4.times.each do |i|
     config.vm.define "#{HOSTNAME}-#{i}" do |node|

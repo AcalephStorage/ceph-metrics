@@ -5,30 +5,34 @@
     dest: /opt/influxdb_{{ influxdb_version }}_{{ influxdb_arch }}.deb
 
 - name: Install Influxdb
-  apt:
-    deb: /opt/influxdb_{{ influxdb_version }}_{{ influxdb_arch }}.deb
+  apt: deb=/opt/{{ item }}
+  with_items:
+    - influxdb_{{ influxdb_version }}_{{ influxdb_arch }}.deb
+  sudo: yes
 
 - name: Copy Custom Config
   copy:
-    src: config.toml
-    dest: /opt/influxdb/shared/config.toml
+    src:  influxdb.conf
+    dest: /etc/opt/influxdb/influxdb.conf
+    force: yes
   notify: Restart Influxdb
+
+- name: Create .influxdb dir
+  file:
+    name: /home/{{ ansible_ssh_user }}/.influxdb
+    state: directory
+    mode: 0777
+
 
 - name: Start Influxdb
   service:
     name: influxdb
-    state: started
+    state: restarted
 
 - name: Wait for Influxdb API
   wait_for:
     port: 8086
 
-- name: Create Graphite Database
-  uri:
-    url: http://localhost:8086/db
-    method: POST
-    body: "{\"name\": \"graphite\"}"
-    force_basic_auth: yes
-    user: root
-    password: root
-    status_code: 201,409
+- name: Influx Create project database
+  command: curl -G  'http://ceph-metric-0:8086/query' -u root:root --data-urlencode "q=CREATE DATABASE metricdb"
+  

@@ -4,7 +4,7 @@ MAINTAINER dexter.genterone@gmail.com
 RUN apt-get update -y && \
     apt-get install -y wget && \
     wget -q -O- 'https://ceph.com/git/?p=ceph.git;a=blob_plain;f=keys/release.asc' | sudo apt-key add - && \
-    echo deb http://ceph.com/debian-firefly/ $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/ceph.list && \
+    echo deb http://ceph.com/debian-hammer/ $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/ceph.list && \
     apt-get update -y && \
     apt-get install -y -q --no-install-recommends ceph librados-dev libcephfs-dev librbd-dev curl build-essential ca-certificates git mercurial bzr && \
     apt-get clean && \

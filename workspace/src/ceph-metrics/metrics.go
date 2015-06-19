@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"github.com/Sirupsen/logrus"
+	influxdb "github.com/influxdb/influxdb/client"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/Sirupsen/logrus"
 )
 
 type (
@@ -168,10 +168,6 @@ func processMetrics() {
 	}
 }
 
-// func isMaster() bool {
-// 	cephCommand
-// }
-
 func updateCephHealth(overallStatus string) {
 	status := HealthWarn
 	if overallStatus == "CEPH_OK" {
@@ -202,7 +198,7 @@ func sendCephQuorum(cephStatus *CephStatus) {
 	monInQuorum := len(cephStatus.Quorum)
 
 	publishMetrics(
-		fmt.Sprintf("%s.quorum", *cluster),
+		fmt.Sprintf("%s_quorum", *cluster),
 		fmt.Sprintf("%d", monInQuorum),
 	)
 
@@ -226,7 +222,7 @@ func sendUtilization(cephDf *CephDF) {
 	}
 
 	publishMetrics(
-		fmt.Sprintf("%s.utilization", *cluster),
+		fmt.Sprintf("%s_utilization", *cluster),
 		fmt.Sprintf("%0.0f", utilized),
 	)
 }
@@ -240,12 +236,12 @@ func sendClientIO(poolStatsList []PoolStats) {
 	}
 
 	publishMetrics(
-		fmt.Sprintf("%s.client.io.kbs", *cluster),
+		fmt.Sprintf("%s_client_io_kbs", *cluster),
 		fmt.Sprintf("%d", sumWrs),
 	)
 
 	publishMetrics(
-		fmt.Sprintf("%s.client.io.ops", *cluster),
+		fmt.Sprintf("%s_client_io_ops", *cluster),
 		fmt.Sprintf("%d", sumOps),
 	)
 }
@@ -254,7 +250,7 @@ func sendOsdEpoch(cephStatus *CephStatus) {
 	epoch := cephStatus.OSDMap.OSDMap.Epoch
 
 	publishMetrics(
-		fmt.Sprintf("%s.osd.epoch", *cluster),
+		fmt.Sprintf("%s_osd_epoch", *cluster),
 		fmt.Sprintf("%d", epoch),
 	)
 }
@@ -264,7 +260,7 @@ func sendPgMetrics(pgDump *PgDump, poolStatsList []PoolStats) {
 	pgCount := len(pgDump.PgStats)
 
 	publishMetrics(
-		fmt.Sprintf("%s.pg.count", *cluster),
+		fmt.Sprintf("%s_pg_count", *cluster),
 		fmt.Sprintf("%d", pgCount),
 	)
 
@@ -276,7 +272,7 @@ func sendPgMetrics(pgDump *PgDump, poolStatsList []PoolStats) {
 
 	for pool, pgs := range poolPgs {
 		publishMetrics(
-			fmt.Sprintf("%s.pg.pool.%s.count", *cluster, pool),
+			fmt.Sprintf("%s_pg_pool_%s_count", *cluster, pool),
 			fmt.Sprintf("%d", pgs),
 		)
 	}
@@ -313,19 +309,19 @@ func sendPgDistribution(pgDump *PgDump) {
 		for osdId, pgs := range osdPgMap {
 			poolPg += pgs
 			publishMetrics(
-				fmt.Sprintf("%s.pg.distribution.pool.%d.osd.%d", *cluster, poolId, osdId),
+				fmt.Sprintf("%s_pg_distribution_pool_%d_osd_%d", *cluster, poolId, osdId),
 				fmt.Sprintf("%d", pgs),
 			)
 		}
 		publishMetrics(
-			fmt.Sprintf("%s.pg.distribution.pool.%d", *cluster, poolId),
+			fmt.Sprintf("%s_pg_distribution_pool_%d", *cluster, poolId),
 			fmt.Sprintf("%d", poolPg),
 		)
 	}
 
 	for osd, pg := range totalOsdPgs {
 		publishMetrics(
-			fmt.Sprintf("%s.pg.distribution.osd.%d", *cluster, osd),
+			fmt.Sprintf("%s_pg_distribution_osd_%d", *cluster, osd),
 			fmt.Sprintf("%d", pg),
 		)
 	}
@@ -335,7 +331,7 @@ func sendPgDistribution(pgDump *PgDump) {
 func sendObjectMetrics(pgDump *PgDump) {
 	for k, v := range pgDump.PgStatSum.StatSum {
 		publishMetrics(
-			fmt.Sprintf("%s.pg.stats.%s", *cluster, k),
+			fmt.Sprintf("%s_pg_stats_%s", *cluster, k),
 			fmt.Sprintf("%d", v),
 		)
 	}
@@ -345,7 +341,7 @@ func sendPoolMetrics(pgDump *PgDump, poolStatsList []PoolStats) {
 	for _, pgPoolStat := range pgDump.PoolStats {
 		for k, v := range pgPoolStat.StatSum {
 			publishMetrics(
-				fmt.Sprintf("%s.pool.%d.%s", *cluster, pgPoolStat.PoolId, k),
+				fmt.Sprintf("%s_pool_%d_%s", *cluster, pgPoolStat.PoolId, k),
 				fmt.Sprint(v),
 			)
 		}
@@ -361,7 +357,7 @@ func sendPoolUtilization(cephDf *CephDF) {
 			utilized = (used / total) * 100.0
 		}
 		publishMetrics(
-			fmt.Sprintf("%s.utilization", *cluster),
+			fmt.Sprintf("%s_utilization", *cluster),
 			fmt.Sprintf("%0.0f", utilized),
 		)
 	}
@@ -384,22 +380,22 @@ func sendPoolQuotas(cephDf *CephDF) {
 		maxBytes := quota.MaxBytes
 
 		publishMetrics(
-			fmt.Sprintf("%s.pool.%d.objects", *cluster, poolId),
+			fmt.Sprintf("%s_pool_%d_objects", *cluster, poolId),
 			fmt.Sprintf("%d", numObjects),
 		)
 
 		publishMetrics(
-			fmt.Sprintf("%s.pool.%d.bytes", *cluster, poolId),
+			fmt.Sprintf("%s_pool_%d_bytes", *cluster, poolId),
 			fmt.Sprintf("%d", numBytes),
 		)
 
 		publishMetrics(
-			fmt.Sprintf("%s.pool.%d.maxobjects", *cluster, poolId),
+			fmt.Sprintf("%s_pool_%d_maxobjects", *cluster, poolId),
 			fmt.Sprintf("%d", maxObjects),
 		)
 
 		publishMetrics(
-			fmt.Sprintf("%s.pool.%d.maxbytes", *cluster, poolId),
+			fmt.Sprintf("%s_pool_%d_maxbytes", *cluster, poolId),
 			fmt.Sprintf("%d", maxBytes),
 		)
 	}
@@ -412,12 +408,12 @@ func sendPoolIO(poolStatsList []PoolStats) {
 		ops := stat.ClientIoRate.OpsPerSec
 
 		publishMetrics(
-			fmt.Sprintf("%s.pool.%d.io.kbs", *cluster, poolId),
+			fmt.Sprintf("%s_pool_%d_io_kbs", *cluster, poolId),
 			fmt.Sprintf("%d", kbs),
 		)
 
 		publishMetrics(
-			fmt.Sprintf("%s.pool.io.%d.io.ops", *cluster, poolId),
+			fmt.Sprintf("%s_pool_io_%d_io_ops", *cluster, poolId),
 			fmt.Sprintf("%d", ops),
 		)
 
@@ -444,23 +440,23 @@ func sendOsdStatus(osdDump *OsdDump) {
 		totalIn += in
 
 		publishMetrics(
-			fmt.Sprintf("%s.osd.%d.up", *cluster, osdNum),
+			fmt.Sprintf("%s_osd_%d_up", *cluster, osdNum),
 			fmt.Sprintf("%d", up),
 		)
 
 		publishMetrics(
-			fmt.Sprintf("%s.osd.%d.in", *cluster, osdNum),
+			fmt.Sprintf("%s_osd_%d_in", *cluster, osdNum),
 			fmt.Sprintf("%d", in),
 		)
 	}
 
 	publishMetrics(
-		fmt.Sprintf("%s.osd.up.total", *cluster),
+		fmt.Sprintf("%s_osd_up_total", *cluster),
 		fmt.Sprintf("%d", totalUp),
 	)
 
 	publishMetrics(
-		fmt.Sprintf("%s.osd.in.total", *cluster),
+		fmt.Sprintf("%s_osd_in_total", *cluster),
 		fmt.Sprintf("%d", totalIn),
 	)
 }
@@ -472,7 +468,7 @@ func sendOsdUtilization(pgDump *PgDump) {
 		total := float64(osdStat.TotalKb)
 		utilized := (used / total) * 100.0
 		publishMetrics(
-			fmt.Sprintf("%s.osd.%d.utilization", *cluster, osdNum),
+			fmt.Sprintf("%s_osd_%d_utilization", *cluster, osdNum),
 			fmt.Sprintf("%0.0f", utilized),
 		)
 	}
@@ -485,28 +481,56 @@ func sendOsdLatency(osdPerf *OsdPerf) {
 		apply := perf.Stats.ApplyLatency
 
 		publishMetrics(
-			fmt.Sprintf("%s.osd.%d.latency.commit", *cluster, osdNum),
+			fmt.Sprintf("%s_osd_%d_latency_commit", *cluster, osdNum),
 			fmt.Sprintf("%d", commit),
 		)
 
 		publishMetrics(
-			fmt.Sprintf("%s.osd.%d.latency.apply", *cluster, osdNum),
+			fmt.Sprintf("%s_osd_%d_latency_apply", *cluster, osdNum),
 			fmt.Sprintf("%d", apply),
 		)
 	}
 }
 
 func publishMetrics(name, value string) {
-	metric := fmt.Sprintf("%s %s %v", name, value, time.Now().Unix())
-	conn, err := net.DialTimeout("tcp", *graphiteAddress, 5*time.Second)
-	if err != nil {
-		// what to do?
+
+	var (
+		pts = make([]influxdb.Point, 1)
+	)
+
+	pts[0] = influxdb.Point{
+		Measurement: name,
+		Fields: map[string]interface{}{
+			"value": value,
+		},
+		Time:      time.Now(),
+		Precision: "s",
 	}
-	_, err = conn.Write([]byte(metric))
+
+	bps := influxdb.BatchPoints{
+		Points:          pts,
+		Database:        "metricdb",
+		RetentionPolicy: "default",
+	}
+
+	url, err := url.Parse(fmt.Sprintf("http://%s:%d", "localhost", 8086))
+	conf := influxdb.Config{
+		URL:      *url,
+		Username: "root",
+		Password: "root",
+	}
+
+	con, err := influxdb.NewClient(conf)
+
 	if err != nil {
-		logrus.Errorln("Unable to send to graphite", *graphiteAddress, metric)
-	} else {
-		// logrus.Infoln("published:", metric)
+		logrus.Errorln("Unable to send establish connection to Influxdb", ":8086", err)
+	}
+
+	con.Write(bps)
+
+	if err != nil {
+		logrus.Errorln("Can't insert data to Influxdb")
+
 	}
 
 }

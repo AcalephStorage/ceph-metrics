@@ -7,6 +7,12 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
+const (
+	OK          = 200
+	WARN        = 429
+	UNAVAILABLE = 503
+)
+
 // http api should possible run on all instances but redirects it to the leader
 
 func startHttpServer(bindAddress string) {
@@ -20,14 +26,15 @@ func cephHealth(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	health := healthMap[req.RequestURI]
 	logrus.Println(req.RequestURI)
-	response := 404
+	var response int
+
 	switch health.status {
 	case HealthOk:
-		response = 200
+		response = OK
 	case HealthWarn:
-		response = 429
+		response = WARN
 	default:
-		response = 503
+		response = UNAVAILABLE
 	}
 	res.WriteHeader(response)
 	res.Write([]byte(health.message + "\n"))

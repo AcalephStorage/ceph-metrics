@@ -24,12 +24,10 @@ const (
 )
 
 var (
-	cluster         = kingpin.Flag("cluster", "ceph cluster to connect to").Default("ceph").String()
-	cephBinary      = kingpin.Flag("ceph-bin", "The ceph binary").Default("/usr/bin/ceph").String()
-	bindAddress     = kingpin.Flag("bind", "address and port to bind the http server").Default(":8080").String()
-	graphiteAddress = kingpin.Flag("graphite-address", "graphite address and port to send metrics to").Default("localhost:2003").String()
-	interval        = kingpin.Flag("interval", "interval when sending metrics").Default("5").Int()
-
+	cluster             = kingpin.Flag("cluster", "ceph cluster to connect to").Default("ceph").String()
+	cephBinary          = kingpin.Flag("ceph-bin", "The ceph binary").Default("/usr/bin/ceph").String()
+	bindAddress         = kingpin.Flag("bind", "address and port to bind the http server").Default(":8080").String()
+	interval            = kingpin.Flag("interval", "interval when sending metrics").Default("5").Int()
 	healthMap           = make(map[string]HealthUpdate)
 	healthUpdateChannel = make(chan HealthUpdate)
 )
